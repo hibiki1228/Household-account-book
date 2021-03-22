@@ -2,9 +2,9 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import mysql.connector as msc
 
+
+
 # 登録画面のGUI
-
-
 def create_gui():
     # ----------------------------------------
     # コールバック関数群
@@ -13,20 +13,14 @@ def create_gui():
     def select_button():
         root.destroy()
         select_gui()
-    
-    # ----------------------------------------
-    # 編集ボタンが押下されたときのコールバック関数
-    def edit_button():
-        root.destroy()
-        edit_gui()
 
     # ----------------------------------------
     # 終了ボタンが押下されたときのコールバック関数
     def quit_button():
         root.destroy()
+
     # ----------------------------------------
     # 登録ボタンがクリックされた時にデータをDBに登録するコールバック関数
-
     def create_sql(item_name):
         # item_nameをWHERE句に渡してitem_codeを取得する
         item_code = cur.execute(
@@ -41,7 +35,6 @@ def create_gui():
         amount = entry3.get()
 
         # SQLを発行してDBへ登録
-        # また、コミットする場合は、commitメソッドを用いる
         try:
             cur.execute(
                 """INSERT INTO acc_data(acc_date,item_code,amount)
@@ -53,24 +46,24 @@ def create_gui():
         # ドメインエラーなどにより登録できなかった場合のエラー処理
         except:
             print("エラーにより登録できませんでした")
+
     # ----------------------------------------
     # 内訳テーブル(item)にあるitem_nameのタプルを作成する
-
     def createitemname():
-        
         # 空の「リスト型」を定義
         li = []
         cur.execute("SELECT item_name FROM item")
         row = cur.fetchall()
+
         # SELECT文を発行し、item_nameを取得し、for文で回す
         for r in row:
             # item_nameをリストに追加する
             li.append(r)
         # リスト型のliをタプル型に変換して、ファンクションに戻す
         return tuple(li)
-    # ----------------------------------------
 
-    # 空のデータベースを作成して接続する
+    # ----------------------------------------
+    # データベースに接続する
     conn = msc.connect(
         host='localhost',
         user='kakeibo',
@@ -86,7 +79,7 @@ def create_gui():
             item_code INTEGER PRIMARY KEY,
             item_name TEXT NOT NULL UNIQUE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
-                    )
+        )
 
 
         # acc_dateテーブルの作成
@@ -96,7 +89,7 @@ def create_gui():
             item_code INT NOT NULL,
             amount INT,
             FOREIGN KEY(item_code) REFERENCES item(item_code))"""
-                    )
+        )
 
         # 仮データの入力
         cur.execute("INSERT INTO item VALUES(1,'食費')")
@@ -106,6 +99,7 @@ def create_gui():
 
     except:
         pass
+
 
     # rootフレームの設定
     root = tk.Tk()
@@ -119,10 +113,8 @@ def create_gui():
     button1.pack(side="left")
     button2 = tk.Button(frame, text="表示", command=select_button)
     button2.pack(side="left")
-    button3 = tk.Button(frame, text="編集", command=edit_button)
-    button3.pack(side="left")
-    button4 = tk.Button(frame, text="終了", command=quit_button)
-    button4.pack(side="right")
+    button3 = tk.Button(frame, text="終了", command=quit_button)
+    button3.pack(side="right")
 
     # 入力画面ラベルの設定
     label1 = tk.Label(root, text="【入力画面】", font=("", 16), height=2)
@@ -175,29 +167,24 @@ def select_gui():
     def create_button():
         root.destroy()
         create_gui()
-
-    # ----------------------------------------
-    # 編集ボタンが押下されたときのコールバック関数
-    def edit_button():
-        root.destroy()
-        edit_gui()
     
     # ----------------------------------------
     # 終了ボタンが押下されたときのコールバック関数
-
     def quit_button():
         root.destroy()
+
     # ----------------------------------------
     # 表示ボタンが押下されたときのコールバック関数
-
     def select_sql(start, end):
         # treeviewのアイテムをすべて削除
         tree.delete(*tree.get_children())
+        
         # 開始日と終了日が空欄だったらデフォルト値の設定
         if start == "":
             start = "1900-01-01"
         if end == "":
             end = "2100-01-01"
+        
         #SELECT文の作成
         sql = """SELECT acc_date,item_name,amount
             FROM acc_data as a,item as i
@@ -205,6 +192,7 @@ def select_gui():
             acc_date BETWEEN '{}' AND '{}'
             ORDER BY acc_date
             """.format(start, end)
+        
         # ツリービューにアイテムの追加
         i = 0
         cur.execute(sql)
@@ -222,6 +210,7 @@ def select_gui():
         li = []
         cur.execute("SELECT item_name FROM item")
         row = cur.fetchall()
+        
         # SELECT文を発行し、item_nameを取得し、for文で回す
         for r in row:
             # item_nameをリストに追加する
@@ -230,7 +219,7 @@ def select_gui():
         return tuple(li)
 
     def delete_sql(id_number):
-        # 金額の読み取り
+        # idの読み取り
         id_number = entry3.get()
 
         try:
@@ -247,9 +236,9 @@ def select_gui():
         # ドメインエラーなどにより削除できなかった場合のエラー処理
         except:
             print("エラーにより削除できませんでした")
-    # ----------------------------------------
 
-    # 空のデータベースを作成して接続する
+    # ----------------------------------------
+    # データベースに接続する
     conn = msc.connect(
         host='localhost',
         user='kakeibo',
@@ -257,6 +246,7 @@ def select_gui():
         database='kakeibo'
     )
     cur = conn.cursor()
+
 
     # rootフレームの設定
     root = tk.Tk()
@@ -270,10 +260,8 @@ def select_gui():
     button1.pack(side="left")
     button2 = tk.Button(frame, text="表示")
     button2.pack(side="left")
-    button3 = tk.Button(frame, text="編集", command=edit_button)
-    button3.pack(side="left")
-    button4 = tk.Button(frame, text="終了", command=quit_button)
-    button4.pack(side="right")
+    button3 = tk.Button(frame, text="終了", command=quit_button)
+    button3.pack(side="right")
 
     # 入力画面ラベルの設定
     label1 = tk.Label(root, text="【表示画面】", font=("", 16), height=2)
@@ -341,6 +329,7 @@ def select_gui():
     # 削除機能の作成
     label1 = tk.Label(root, text="削除したい箇所の番号を入力", font=("", 16), height=2)
     label1.pack(fill="x")
+
     # 削除項目入力部分
     frame1 = tk.Frame(root, pady=10)
     frame1.pack()
@@ -348,7 +337,6 @@ def select_gui():
     label2.pack(side="left")
     entry3 = tk.Entry(frame1, font=("", 14), justify="center", width=15)
     entry3.pack(side="left")
-
 
     # 削除ボタンの設定
     button4 = tk.Button(root, text="削除",
