@@ -1,8 +1,6 @@
 import tkinter as tk
-# python2の場合は、import Tkinter as tk
 import tkinter.ttk as ttk
-# python2の場合は、import ttk
-import sqlite3
+import mysql.connector as msc
 
 # 登録画面のGUI
 
@@ -30,31 +28,27 @@ def create_gui():
     # 登録ボタンがクリックされた時にデータをDBに登録するコールバック関数
 
     def create_sql(item_name):
-
-        # データベースに接続
-        c = sqlite3.connect("database.db")
         # item_nameをWHERE句に渡してitem_codeを取得する
-        item_code = c.execute(
+        item_code = cur.execute(
             """SELECT item_code FROM item
             WHERE item_name = '{}'
             """.format(item_name)
         )
-        item_code = item_code.fetchone()[0]
+        item_code = cur.fetchone()[0]
         # 日付の読み取り
-        acc_data = entry1.get().replace("/", "-")
+        acc_date = entry1.get().replace("/", "-")
         # 金額の読み取り
         amount = entry3.get()
 
         # SQLを発行してDBへ登録
-        # python2の場合は、ユニコード文字列でsqlite3に渡す
         # また、コミットする場合は、commitメソッドを用いる
         try:
-            c.execute(
+            cur.execute(
                 """INSERT INTO acc_data(acc_date,item_code,amount)
                 VALUES('{}',{},{});
-                """.format(acc_data, item_code, amount)
+                """.format(acc_date, item_code, amount)
             )
-            c.execute("COMMIT;")
+            cur.execute("COMMIT;")
             print("1件登録しました")
         # ドメインエラーなどにより登録できなかった場合のエラー処理
         except:
@@ -63,12 +57,13 @@ def create_gui():
     # 内訳テーブル(item)にあるitem_nameのタプルを作成する
 
     def createitemname():
-        # データベースの接続
-        c = sqlite3.connect("database.db")
+        
         # 空の「リスト型」を定義
         li = []
+        cur.execute("SELECT item_name FROM item")
+        row = cur.fetchall()
         # SELECT文を発行し、item_nameを取得し、for文で回す
-        for r in c.execute("SELECT item_name FROM item"):
+        for r in row:
             # item_nameをリストに追加する
             li.append(r)
         # リスト型のliをタプル型に変換して、ファンクションに戻す
@@ -76,33 +71,39 @@ def create_gui():
     # ----------------------------------------
 
     # 空のデータベースを作成して接続する
-    dbname = "database.db"
-    c = sqlite3.connect(dbname)
-    c.execute("PRAGMA foreign_keys = 1")
+    conn = msc.connect(
+        host='localhost',
+        user='kakeibo',
+        password='hibiki',
+        database='kakeibo'
+    )
+    cur = conn.cursor()
 
     # 既にデータベースが登録されている場合は、ddlの発行でエラーが出るのでexceptブロックで回避する
     try:
         # itemテーブルの定義
-        ddl = """CREATE TABLE item(
-        item_code INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_name TEXT NOT NULL UNIQUE
-        )"""
-        # SQLの発行
-        c.execute(ddl)
-        # acc_dataテーブルの定義
-        ddl = """CREATE TABLE acc_data( 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cur.execute("""CREATE TABLE item(
+            item_code INTEGER PRIMARY KEY,
+            item_name TEXT NOT NULL UNIQUE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"""
+                    )
+
+
+        # acc_dateテーブルの作成
+        cur.execute("""CREATE TABLE acc_data(
+            id INT PRIMARY KEY AUTO_INCREMENT,
             acc_date DATE NOT NULL,
-            item_code INTEGER NOT NULL,
-            amount INTEGER,
-            FOREIGN KEY(item_code) REFERENCES item(item_code)
-            )"""
-        # itemテーブルへリファレンスデータの登録
-        c.execute(ddl)
-        c.execute("INSERT INTO item VALUES(1,'食費')")
-        c.execute("INSERT INTO item VALUES(2,'住宅費')")
-        c.execute("INSERT INTO item VALUES(3,'光熱費')")
-        c.execute("COMMIT")
+            item_code INT NOT NULL,
+            amount INT,
+            FOREIGN KEY(item_code) REFERENCES item(item_code))"""
+                    )
+
+        # 仮データの入力
+        cur.execute("INSERT INTO item VALUES(1,'食費')")
+        cur.execute("INSERT INTO item VALUES(2,'住宅費')")
+        cur.execute("INSERT INTO item VALUES(3,'光熱費')")
+        cur.execute("COMMIT")
+
     except:
         pass
 
@@ -163,9 +164,9 @@ def create_gui():
 
     root.mainloop()
 
+
+
 # 表示画面のGUI
-
-
 def select_gui():
     # ----------------------------------------
     # コールバック関数群
@@ -206,7 +207,9 @@ def select_gui():
             """.format(start, end)
         # ツリービューにアイテムの追加
         i = 0
-        for r in c.execute(sql):
+        cur.execute(sql)
+        row = cur.fetchall()
+        for r in row:
             # 金額(r[2])を通貨形式に変換
             r = (r[0], r[1], "¥{:,d}".format(r[2]))
             tree.insert("", "end", tags=i, values=r)
@@ -216,9 +219,13 @@ def select_gui():
     # ----------------------------------------
 
     # 空のデータベースを作成して接続する
-    dbname = "database.db"
-    c = sqlite3.connect(dbname)
-    c.execute("PRAGMA foreign_keys = 1")
+    conn = msc.connect(
+        host='localhost',
+        user='kakeibo',
+        password='hibiki',
+        database='kakeibo'
+    )
+    cur = conn.cursor()
 
     # rootフレームの設定
     root = tk.Tk()
@@ -286,7 +293,9 @@ def select_gui():
     """
     # ツリービューにアイテムの追加
     i = 0
-    for r in c.execute(sql):
+    cur.execute(sql)
+    row = cur.fetchall()
+    for r in row:
         # 金額(r[2])を通貨形式に変換
         r = (r[0], r[1], "¥{:,d}".format(r[2]))
         tree.insert("", "end", tags=i, values=r)
@@ -299,9 +308,9 @@ def select_gui():
     # メインループ
     root.mainloop()
 
+
+
 # 編集画面のGUI
-
-
 def edit_gui():
     # ----------------------------------------
     # コールバック関数群
@@ -344,6 +353,8 @@ def edit_gui():
     
 
     root.mainloop()
+
+
 
 # GUI画面の表示
 create_gui()

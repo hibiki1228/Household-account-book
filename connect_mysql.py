@@ -10,7 +10,7 @@ conn = msc.connect(
 print(conn.is_connected())
 
 cur = conn.cursor()
-cur.execute("SELECT * FROM kakeibo_test1")
+cur.execute("SELECT * FROM acc_data, item")
 rows = cur.fetchall()
 for row in rows:
     print(row)
