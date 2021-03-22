@@ -216,6 +216,37 @@ def select_gui():
             if i & 1:
                 tree.tag_configure(i, background="#CCFFFF")
             i += 1
+        
+    def createitemname():
+        # 空の「リスト型」を定義
+        li = []
+        cur.execute("SELECT item_name FROM item")
+        row = cur.fetchall()
+        # SELECT文を発行し、item_nameを取得し、for文で回す
+        for r in row:
+            # item_nameをリストに追加する
+            li.append(r)
+        # リスト型のliをタプル型に変換して、ファンクションに戻す
+        return tuple(li)
+
+    def delete_sql(id_number):
+        # 金額の読み取り
+        id_number = entry3.get()
+
+        try:
+            cur.execute(
+                """DELETE FROM acc_data
+                where id={}
+                """.format(id_number)
+            )
+            cur.execute("COMMIT;")
+            print("1件削除しました")
+            cur.execute("SET @i := 0;")
+            cur.execute("UPDATE acc_data SET id = (@i := @i + 1);")
+            cur.execute("ALTER TABLE acc_data AUTO_INCREMENT = 1")
+        # ドメインエラーなどにより削除できなかった場合のエラー処理
+        except:
+            print("エラーにより削除できませんでした")
     # ----------------------------------------
 
     # 空のデータベースを作成して接続する
@@ -230,7 +261,7 @@ def select_gui():
     # rootフレームの設定
     root = tk.Tk()
     root.title("家計簿アプリ")
-    root.geometry("400x500")
+    root.geometry("400x700")
 
     # メニューの設定
     frame = tk.Frame(root, bd=2, relief="ridge")
@@ -269,14 +300,16 @@ def select_gui():
 
     # ツリービューの作成
     tree = ttk.Treeview(root, padding=10)
-    tree["columns"] = (1, 2, 3)
+    tree["columns"] = (1, 2, 3, 4)
     tree["show"] = "headings"
-    tree.column(1, width=100)
-    tree.column(2, width=75)
-    tree.column(3, width=100)
-    tree.heading(1, text="日付")
-    tree.heading(2, text="内訳")
-    tree.heading(3, text="金額")
+    tree.column(1, width=50)
+    tree.column(2, width=100)
+    tree.column(3, width=75)
+    tree.column(4, width=100)
+    tree.heading(1, text="番号")
+    tree.heading(2, text="日付")
+    tree.heading(3, text="内訳")
+    tree.heading(4, text="金額")
 
     # ツリービューのスタイル変更
     style = ttk.Style()
@@ -286,7 +319,7 @@ def select_gui():
     style.configure("Treeview.Heading", font=("", 14, "bold"))
 
     # SELECT文の作成
-    sql = """SELECT acc_date,item_name,amount
+    sql = """SELECT a.id,acc_date,item_name,amount
     FROM acc_data as a,item as i
     WHERE a.item_code = i.item_code
     ORDER BY acc_date
@@ -297,13 +330,32 @@ def select_gui():
     row = cur.fetchall()
     for r in row:
         # 金額(r[2])を通貨形式に変換
-        r = (r[0], r[1], "¥{:,d}".format(r[2]))
+        r = (r[0], r[1], r[2], "¥{:,d}".format(r[3]))
         tree.insert("", "end", tags=i, values=r)
         if i & 1:
             tree.tag_configure(i, background="#CCFFFF")
         i += 1
     # ツリービューの配置
     tree.pack(fill="x", padx=20, pady=20)
+
+    # 削除機能の作成
+    label1 = tk.Label(root, text="削除したい箇所の番号を入力", font=("", 16), height=2)
+    label1.pack(fill="x")
+    # 削除項目入力部分
+    frame1 = tk.Frame(root, pady=10)
+    frame1.pack()
+    label2 = tk.Label(frame1, font=("", 14), text="番号")
+    label2.pack(side="left")
+    entry3 = tk.Entry(frame1, font=("", 14), justify="center", width=15)
+    entry3.pack(side="left")
+
+
+    # 削除ボタンの設定
+    button4 = tk.Button(root, text="削除",
+                        font=("", 16),
+                        width=10, bg="gray",
+                        command=lambda: delete_sql(entry3.get()))
+    button4.pack()
 
     # メインループ
     root.mainloop()
